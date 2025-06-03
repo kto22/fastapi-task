@@ -56,13 +56,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            # Update kubeconfig
             microk8s config > ~/.kube/config
-            
-            # Create namespace if it doesn't exist
             microk8s kubectl create namespace fastapi-task --dry-run=client -o yaml | microk8s kubectl apply -f -
-            
-            # Create deployment
             cat <<EOF | microk8s kubectl apply -f -
             apiVersion: apps/v1
             kind: Deployment
@@ -91,8 +86,6 @@ jobs:
                           name: fastapi-secrets
                           key: database-url
             EOF
-            
-            # Create service
             cat <<EOF | microk8s kubectl apply -f -
             apiVersion: v1
             kind: Service
@@ -104,7 +97,7 @@ jobs:
                 app: fastapi-task
               ports:
                 - protocol: TCP
-                  port: 80
+                  port: 8000
                   targetPort: 8000
               type: LoadBalancer
             EOF 
