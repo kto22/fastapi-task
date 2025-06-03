@@ -1,112 +1,197 @@
-# Library Management System API
+# Библиотечная система управления
 
-A RESTful API for managing a library catalog, built with FastAPI and SQLite.
+RESTful API для управления библиотечным каталогом, построенное на FastAPI и SQLite.
 
-## Features
+## Содержание
+- [Установка и запуск](#установка-и-запуск)
+- [Структура проекта](#структура-проекта)
+- [Архитектура базы данных](#архитектура-базы-данных)
+- [Бизнес-логика](#бизнес-логика)
+- [Аутентификация](#аутентификация)
+- [Дополнительные возможности](#дополнительные-возможности)
 
-- JWT-based authentication for librarians
-- CRUD operations for books and readers
-- Book borrowing and returning functionality
-- Business logic enforcement (max books per reader, available copies)
-- Database migrations with Alembic
+## Установка и запуск
 
-## Requirements
+### Локальная установка
 
-- Python 3.8+
-- FastAPI
-- SQLAlchemy
-- SQLite
-- JWT for authentication
-- Pydantic for data validation
-- Alembic for database migrations
-- Pytest for testing
+1. Клонируйте репозиторий:
+```bash
+git clone <repository-url>
+cd library-management
+```
 
-## Installation
+2. Создайте виртуальное окружение:
+```bash
+python -m venv venv
+source venv/bin/activate  # Для Linux/Mac
+# или
+venv\Scripts\activate  # Для Windows
+```
 
-1. Clone the repository
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate d
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Run database migrations:
-   ```bash
-   alembic upgrade head
-   ```
+3. Установите зависимости:
+```bash
+pip install -r requirements.txt
+```
 
-## Running the Application
-
-Start the server:
+4. Запустите приложение:
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
+Приложение будет доступно по адресу: `http://localhost:8000`
 
-## API Documentation
+### Запуск через Docker
 
-Once the server is running, you can access:
-- Interactive API documentation (Swagger UI): `http://localhost:8000/docs`
-- Alternative API documentation (ReDoc): `http://localhost:8000/redoc`
-
-## API Endpoints
-
-### Authentication
-- POST `/register` - Register a new librarian
-- POST `/token` - Login and get JWT token
-
-### Books (Protected)
-- GET `/books/` - List all books
-- POST `/books/` - Create a new book
-- GET `/books/{book_id}` - Get book details
-- PUT `/books/{book_id}` - Update a book
-- DELETE `/books/{book_id}` - Delete a book
-
-### Readers (Protected)
-- GET `/readers/` - List all readers
-- POST `/readers/` - Create a new reader
-- GET `/readers/{reader_id}` - Get reader details
-- PUT `/readers/{reader_id}` - Update a reader
-- DELETE `/readers/{reader_id}` - Delete a reader
-
-### Book Operations (Protected)
-- POST `/borrow/` - Borrow a book
-- POST `/return/{borrow_id}` - Return a book
-- GET `/readers/{reader_id}/borrowed` - Get reader's borrowed books
-
-## Business Rules
-
-1. A reader cannot borrow more than 3 books at a time
-2. A book can only be borrowed if copies are available
-3. A book cannot be returned if it wasn't borrowed or was already returned
-4. All operations (except registration and login) require JWT authentication
-
-## Testing
-
-Run the tests with:
+1. Соберите Docker образ:
 ```bash
-pytest
+docker build -t library-management .
 ```
 
-## Database Migrations
-
-The project uses Alembic for database migrations. The initial migration creates all necessary tables, and the second migration adds a description field to books.
-
-To create a new migration:
+2. Запустите контейнер:
 ```bash
-alembic revision --autogenerate -m "description"
+docker run -d -p 8000:8000 library-management
 ```
 
-To apply migrations:
-```bash
-alembic upgrade head
+### CI/CD с GitHub Actions
+
+Проект настроен для автоматической сборки и тестирования через GitHub Actions. При пуше в main ветку:
+
+1. Запускаются автоматические тесты
+2. Собирается Docker образ
+3. Образ публикуется в GitHub Container Registry
+
+Для использования CI/CD:
+
+1. Форкните репозиторий
+2. Включите GitHub Actions в настройках репозитория
+3. Настройте секреты для доступа к GitHub Container Registry:
+   - `GHCR_USERNAME`
+   - `GHCR_TOKEN`
+
+### Регистрация первого пользователя
+
+1. Откройте Swagger UI: `http://localhost:8000/docs`
+2. Найдите эндпоинт POST `/register`
+3. Введите данные в формате:
+```json
+{
+    "email": "your@email.com",
+    "password": "your_password"
+}
+```
+4. После успешной регистрации используйте эндпоинт POST `/token` для получения JWT токена
+5. Используйте полученный токен для доступа к защищенным эндпоинтам
+
+## Структура проекта
+
+```
+library-management/
+├── app/
+│   ├── __init__.py
+│   ├── main.py          # Основной файл приложения
+│   ├── models.py        # Модели SQLAlchemy
+│   ├── schemas.py       # Pydantic схемы
+│   ├── auth.py          # Логика аутентификации
+│   └── database.py      # Конфигурация БД
+├── tests/
+│   └── test_library.py  # Тесты
+├── requirements.txt
+└── README.md
 ```
 
-To rollback migrations:
-```bash
-alembic downgrade -1
-``` 
+## Архитектура базы данных
+
+База данных построена на SQLite с использованием SQLAlchemy ORM. Основные таблицы:
+
+1. `users` - библиотекари
+   - id (PK)
+   - email (unique)
+   - hashed_password
+
+2. `books` - книги
+   - id (PK)
+   - title
+   - author
+   - copies_available
+
+3. `readers` - читатели
+   - id (PK)
+   - name
+   - email (unique)
+
+4. `borrowed_books` - выданные книги
+   - id (PK)
+   - book_id (FK)
+   - reader_id (FK)
+   - borrow_date
+   - return_date
+
+Принятые решения:
+- Использование SQLite для простоты развертывания
+- Отслеживание количества экземпляров в таблице books
+- Отдельная таблица для выданных книг с датами выдачи/возврата
+
+## Бизнес-логика
+
+### 4.1 Выдача книг
+Реализовано через эндпоинт POST `/borrow/`:
+- Проверка наличия экземпляров (copies_available > 0)
+- Уменьшение количества экземпляров при выдаче
+- Фиксация даты выдачи
+
+Сложности и решения:
+- Атомарность операции: использование транзакций SQLAlchemy
+- Конкурентный доступ: блокировка на уровне БД
+
+### 4.2 Ограничение количества книг
+Реализовано в эндпоинте POST `/borrow/`:
+- Подсчет активных выдач для читателя
+- Проверка лимита в 3 книги
+- Отказ в выдаче при превышении лимита
+
+Сложности и решения:
+- Производительность: оптимизация запроса подсчета книг
+- Консистентность: проверка в рамках транзакции
+
+### 4.3 Возврат книг
+Реализовано через эндпоинт POST `/return/{borrow_id}`:
+- Проверка существования записи о выдаче
+- Проверка, что книга еще не возвращена
+- Увеличение количества экземпляров
+- Фиксация даты возврата
+
+Сложности и решения:
+- Валидация состояния: проверка return_date
+- Атомарность: использование транзакций
+
+## Аутентификация
+
+### Реализация
+- JWT токены с использованием python-jose
+- Хеширование паролей через passlib[bcrypt]
+- Время жизни токена: 30 минут
+
+### Защищенные эндпоинты
+- Все эндпоинты кроме:
+  - POST `/register`
+  - POST `/token`
+  - GET `/books/` (публичный доступ)
+
+### Используемые библиотеки
+- python-jose: для работы с JWT
+- passlib[bcrypt]: для хеширования паролей
+- fastapi.security: для интеграции с FastAPI
+
+## Дополнительные возможности
+
+### Система уведомлений
+Предлагаемая дополнительная фича: система уведомлений для читателей о:
+- Просроченных книгах
+- Доступности зарезервированных книг
+- Новых поступлениях по интересующим жанрам
+
+Реализация:
+1. Добавить таблицу `notifications` для хранения уведомлений
+2. Создать фоновую задачу для проверки просрочек
+3. Добавить систему подписок на уведомления
+4. Реализовать отправку через email/SMS
