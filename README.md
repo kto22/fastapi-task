@@ -16,8 +16,8 @@ RESTful API для управления библиотечным каталог�
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <repository-url>
-cd library-management
+git clone https://github.com/kto22/fastapi-task.git
+cd fastapi-task
 ```
 
 2. Создайте виртуальное окружение:
@@ -44,12 +44,12 @@ uvicorn app.main:app --reload
 
 1. Соберите Docker образ:
 ```bash
-docker build -t library-management .
+docker build -t fastapi-task .
 ```
 
 2. Запустите контейнер:
 ```bash
-docker run -d -p 8000:8000 library-management
+docker run -d -p 8000:8000 fastapi-task
 ```
 
 ### CI/CD с GitHub Actions
@@ -85,7 +85,7 @@ docker run -d -p 8000:8000 library-management
 ## Структура проекта
 
 ```
-library-management/
+fastapi-task/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py          # Основной файл приложения
