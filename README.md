@@ -27,7 +27,7 @@ A RESTful API for managing a library catalog, built with FastAPI and SQLite.
 2. Create a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate d
    ```
 3. Install dependencies:
    ```bash
